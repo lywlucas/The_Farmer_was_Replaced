@@ -289,7 +289,7 @@ def eat_apple(target, area, cnt):
 
 	if width<snaky2_size-1:
 		quick_getout(area)
-	elif cnt<=y*2+1:
+	elif cnt<=y*2+1: #这个判定也是小巧思来的，删去也没有什么影响
 		quick_getout(area)
 	else:
 		snaky_quick_move((x_n, y_n), area)
@@ -302,10 +302,10 @@ def snaky2(size=32):
 	clear()
 	set_world_size(size)
 	A=size**2
-	turn_point=A//2
+	turn_point=A//2 #回退到汉密尔顿回路的转折点
 	#理论上来说，由于我们优化了剪枝，转折点应该略大于1/2；然而剪枝过程带来额外计算量，最后误差相消，实测还是1/2最优
 	main_area=((1,size-1),size-1, West, North)
-	main_move={}
+	main_move={} #打表存储主回路方向信息，实测能省下至少30秒
 	for xi in range(size):
 		for yi in range(size):
 			i=LtoH(xi,yi)
@@ -335,8 +335,8 @@ def snaky2(size=32):
 						break
 					id+=1
 				break
-			if id<cnt:
-				if id<next_id<=cnt:
+			if id<cnt: #说明蛇尾还没有进入左侧返回区，右侧上方还没有清空
+				if id<next_id<=cnt: #苹果刷在盘起身子的路径上
 					l=next_id-id
 					for _ in range(l):
 						move(main_move[id])
@@ -348,7 +348,7 @@ def snaky2(size=32):
 						move(main_move[id])
 						id+=1
 					continue
-			elif x==0:
+			elif x==0: #最左侧的返回区
 				move(main_move[id])
 				continue
 			else:
@@ -362,7 +362,8 @@ def main():
 	#if snaky2_size!=0 and snaky2_hoping!=0:
 	#	snaky2(snaky2_size,snaky2_hoping)
 	#else:
-		snaky2()
+	#	snaky2()
+	snaky2(snaky2_size)
 
 if __name__=="__main__":
 	main()
