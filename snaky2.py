@@ -1,10 +1,11 @@
 reverse={East:West, West:East, North:South, South:North}
 global snaky2_size
-global snaky2_hoping
+#global snaky2_hoping
 snaky2_size=32
-snaky2_hoping=33480000
+#snaky2_hoping=33480000
 
 def LtoH(x,y):
+	'''将坐标(x,y)转换为蛇形编号'''
 	n=get_world_size()
 	if x==0:
 		return n-y
@@ -14,6 +15,10 @@ def LtoH(x,y):
 		return n+(n-1)*y+n-x
 		
 def is_in_area(location, area, upper=False, can_equal=True):
+	'''
+	判断坐标location是否在区域area内。area包括四个参数：终点坐标(x_n,y_n)，宽度width，终点路线方向dir，蛇形路线的上行方向up。
+	upper表示location在蛇形路线中是否必须比当前位置处于更后方，can_equal表示location是否允许和当前位置处于同一高度。
+	'''
 	size=get_world_size()
 	main_area=((1,size-1),size-1, West, North)
 	(x_n,y_n), width, dir, up = area
@@ -104,6 +109,7 @@ def is_in_area(location, area, upper=False, can_equal=True):
 	return True
 			
 def snaky_move(area, simulating=None):
+	'''在区域area内进行蛇形移动，simulating表示模拟移动的坐标，如果为None则表示实际移动。'''
 	(x_n,y_n), width, dir, up = area
 	if simulating==None:
 		x, y = get_pos_x(), get_pos_y()
@@ -135,6 +141,7 @@ def snaky_move(area, simulating=None):
 	return new_dir
 		
 def snaky_quick_move(target, area):
+	'''在区域area内沿汉密尔顿剪枝路线，快速移动到目标坐标target，如果无法到达则返回None，否则返回最后一个拐点坐标。'''
 	a, b = target
 	(x_n,y_n), width, dir, up = area
 	break_point=None
@@ -195,6 +202,7 @@ def snaky_quick_move(target, area):
 				move(temp)
 
 def quick_getout(area):
+	'''在区域area内，向dir方向快速移动出区域。主要用于main_area以外的区域。'''
 	(x_n,y_n), width, dir, up = area
 	x, y = get_pos_x(), get_pos_y()
 	if is_in_area((x,y),area)==False:
@@ -212,6 +220,8 @@ def quick_getout(area):
 
 	
 def eat_apple(target, area, cnt):
+	'''最主要的逻辑函数，采用递归分治的思想。接收参数target表示目标坐标，area表示当前区域，cnt表示当前蛇长。
+	沿着汉密尔顿剪枝路线吃掉area内目标坐标target的苹果，并返回新的target和更新后的蛇长cnt。'''
 	(x_n,y_n), width, dir, up = area
 	a, b = target
 	x, y = get_pos_x(), get_pos_y()
@@ -247,7 +257,7 @@ def eat_apple(target, area, cnt):
 		else:
 			y_f = y_n + width - 1
 			y_g = y_n
-	
+	# 变量warn=0时，代表蛇头在区域的最上方，此时子区域很可能进得去出不来，因此直接舍弃
 	w_g, w_f= n_width-1, n_width-1
 	dir_b=snaky_move(area, (x_b,y_b))
 	if dir_b==dir:
@@ -256,6 +266,7 @@ def eat_apple(target, area, cnt):
 		w_f+=1
 	if cnt<=n_width*2:
 		w_g, w_f= snaky2_size-2, snaky2_size-2
+		# 这个判定完全是小巧思，在蛇不长时，放宽子区域范围。删去这一步也没有影响。
 	
 	area_ins=((x_g, y_g), n_width -1, up, dir)
 	area_out=((x_f,y_f), n_width -1, up, reverse[dir])
@@ -266,7 +277,8 @@ def eat_apple(target, area, cnt):
 		
 	if is_in_area(newt, area, True)==True:
 		newt, cnt=eat_apple(newt, area, cnt)
-	elif is_in_area(newt, area_ins, True, False)==True:
+	elif warn!=0 and is_in_area(newt, area_ins, True, False)==True:
+		# 这里如果不加warn!=0的判断，有小概率导致从二级子区域意外离开父区域
 		move(dir)
 		newt, cnt=eat_apple(newt, area_ins, cnt)
 		newt, cnt=eat_apple(newt, area, cnt)
@@ -285,19 +297,14 @@ def eat_apple(target, area, cnt):
 	
 	return (newt, cnt)
 
-def snaky2(size=32, hoping= 2*10**7):
+def snaky2(size=32):
+	# 这里曾经还传一个参数hoping，表示多次循环后希望的骨头总数，但冲榜时这个参数没有什么用，所以就删掉了
 	clear()
 	set_world_size(size)
 	A=size**2
 	turn_point=A//2
+	#理论上来说，由于我们优化了剪枝，转折点应该略大于1/2；然而剪枝过程带来额外计算量，最后误差相消，实测还是1/2最优
 	main_area=((1,size-1),size-1, West, North)
-	#main_move=[[East]]
-	#for _ in range(size-1):
-	#	main_move[0].append(South)
-	#for xi in range(1,size):
-	#	main_move.append([])
-	#	for yi in range(size):
-	#		main_move[xi].append(snaky_move(main_area,(xi,yi)))
 	main_move={}
 	for xi in range(size):
 		for yi in range(size):
@@ -352,9 +359,9 @@ def snaky2(size=32, hoping= 2*10**7):
 		change_hat(Hats.Straw_Hat)
 		return True
 def main():
-	if snaky2_size!=0 and snaky2_hoping!=0:
-		snaky2(snaky2_size,snaky2_hoping)
-	else:
+	#if snaky2_size!=0 and snaky2_hoping!=0:
+	#	snaky2(snaky2_size,snaky2_hoping)
+	#else:
 		snaky2()
 
 if __name__=="__main__":
