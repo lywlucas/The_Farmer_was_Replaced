@@ -335,15 +335,16 @@ def snaky2(size=32):
 						break
 					id+=1
 				break
-			if id<cnt: #说明蛇尾还没有进入左侧返回区，右侧上方还没有清空
-				if id<next_id<=cnt: #苹果刷在盘起身子的路径上
+			ccnt = cnt - size + cnt//size #蛇盘起身子最多容许蛇尾留下size - cnt//size格在外面
+			if id<ccnt: #说明蛇还没有盘起身子
+				if id<next_id<=ccnt: #苹果刷在盘起身子的路径上
 					l=next_id-id
 					for _ in range(l):
 						move(main_move[id])
 						id+=1
 					continue
 				else:
-					l=cnt-id
+					l=ccnt-id
 					for _ in range(l):
 						move(main_move[id])
 						id+=1
